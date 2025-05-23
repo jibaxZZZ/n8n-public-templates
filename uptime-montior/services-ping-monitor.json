@@ -1,0 +1,279 @@
+{
+    "nodes": [
+      {
+        "parameters": {
+          "content": "## Cron ping services in from the front app\n"
+        },
+        "type": "n8n-nodes-base.stickyNote",
+        "position": [
+          880,
+          -320
+        ],
+        "typeVersion": 1,
+        "id": "b7363bce-3acb-409a-9900-0a6f51ebc674",
+        "name": "Sticky Note"
+      },
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "cronExpression",
+                "expression": "*/10 * * * * *"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [
+          -80,
+          -80
+        ],
+        "id": "abf83364-151c-4a0b-a9ac-822776b75d1a",
+        "name": "Schedule Trigger"
+      },
+      {
+        "parameters": {
+          "url": "https://ffcf-2a01-e0a-1ff-b170-5c51-6cdf-af84-634e.ngrok-free.app/data/monitoring.json",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          120,
+          -80
+        ],
+        "id": "c2bbc24e-aeff-4c1c-aed3-801eb860b126",
+        "name": "HTTP Request"
+      },
+      {
+        "parameters": {
+          "options": {}
+        },
+        "type": "n8n-nodes-base.splitInBatches",
+        "typeVersion": 3,
+        "position": [
+          300,
+          -80
+        ],
+        "id": "2b670643-8d8c-4e1e-9a5e-fdf10a5abbbf",
+        "name": "Loop Over Items"
+      },
+      {
+        "parameters": {
+          "url": "={{$json[\"id\"]}}",
+          "options": {
+            "response": {
+              "response": {
+                "fullResponse": true,
+                "responseFormat": "text"
+              }
+            },
+            "timeout": 5000
+          }
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          620,
+          60
+        ],
+        "id": "2a1f9a6c-3032-4d41-aaea-ab4a7fb49390",
+        "name": "HTTP Request1"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://784a-2a01-e0a-1ff-b170-5c51-6cdf-af84-634e.ngrok-free.app/api/monitoring",
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "result",
+                "value": "={{ $json.result }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          660,
+          -120
+        ],
+        "id": "68daf733-3781-49ee-af4d-3fd78be75c0a",
+        "name": "HTTP Request2"
+      },
+      {
+        "parameters": {
+          "jsCode": "return [\n  {\n    result: $input.all().map(item => item.json)\n  }\n];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          480,
+          -120
+        ],
+        "id": "8e5f1854-0f9f-4963-9054-995dde897922",
+        "name": "Code"
+      },
+      {
+        "parameters": {
+          "jsCode": "const item = $input.first().json;\nitem.startTime = new Date().toISOString();\nreturn [{ json: item }];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          460,
+          60
+        ],
+        "id": "fea195e7-db1a-4d17-afd7-c706f816dabb",
+        "name": "Code1"
+      },
+      {
+        "parameters": {
+          "jsCode": "const now = new Date().toISOString();\nconst history =  $input.first().json[\"0\"].json.history || [];\nconst responseTime = new Date().getTime() - new Date($input.first().json[\"0\"].json.startTime).getTime();\nconst status = $input.first().json[\"0\"].json.status || 0;\n\nreturn [\n  {\n    json: {\n      id: $input.first().json[\"0\"].json.id,\n      status,\n      responseTime,\n      timestamp: now,\n      history: [\n        ...history,\n        {\n          timestamp: now,\n          status,\n          responseTime\n        }\n      ]\n    }\n  }\n];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          920,
+          60
+        ],
+        "id": "3b7a9d42-af6b-44a6-a370-62a3c843501b",
+        "name": "Code2"
+      },
+      {
+        "parameters": {
+          "jsCode": "// Merge input data (startTime, id, history...) with the HTTP response\nreturn [\n  {\n    json: {\n      ...$input.first().json,     // data from input before HTTP call\n      ...$(\"Code1\").all(),                // response from HTTP call (statusCode, etc.)\n    }\n  }\n];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          760,
+          60
+        ],
+        "id": "7db8c044-b228-44b3-bdc3-5889e54d7ea8",
+        "name": "Code3"
+      }
+    ],
+    "connections": {
+      "Schedule Trigger": {
+        "main": [
+          [
+            {
+              "node": "HTTP Request",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "HTTP Request": {
+        "main": [
+          [
+            {
+              "node": "Loop Over Items",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Loop Over Items": {
+        "main": [
+          [
+            {
+              "node": "Code",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Code1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "HTTP Request1": {
+        "main": [
+          [
+            {
+              "node": "Code3",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code": {
+        "main": [
+          [
+            {
+              "node": "HTTP Request2",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code1": {
+        "main": [
+          [
+            {
+              "node": "HTTP Request1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code2": {
+        "main": [
+          [
+            {
+              "node": "Loop Over Items",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code3": {
+        "main": [
+          [
+            {
+              "node": "Code2",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "pinData": {
+      "Schedule Trigger": [
+        {
+          "timestamp": "2025-05-23T10:47:10.004-04:00",
+          "Readable date": "May 23rd 2025, 10:47:10 am",
+          "Readable time": "10:47:10 am",
+          "Day of week": "Friday",
+          "Year": "2025",
+          "Month": "May",
+          "Day of month": "23",
+          "Hour": "10",
+          "Minute": "47",
+          "Second": "10",
+          "Timezone": "America/New_York (UTC-04:00)"
+        }
+      ]
+    },
+    "meta": {
+      "instanceId": "ef8231c16f0ef84d56b9b4054ed685ffe859d26a32135f3d7732a873053c77bd"
+    }
+  }
