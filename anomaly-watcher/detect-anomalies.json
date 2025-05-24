@@ -1,0 +1,204 @@
+{
+    "nodes": [
+      {
+        "parameters": {
+          "content": "## Anomaly monitor \nAutomatic detection of anomalies on your PC or services"
+        },
+        "type": "n8n-nodes-base.stickyNote",
+        "position": [
+          -220,
+          -280
+        ],
+        "typeVersion": 1,
+        "id": "3bb2b597-baec-482f-87e5-5eeb7bd40d7e",
+        "name": "Sticky Note"
+      },
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "504fedd4-adb5-48d4-af3d-40b091d8a33f",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          -400,
+          -20
+        ],
+        "id": "a46d920f-2cc0-475b-9cf0-c82e1845c266",
+        "name": "Webhook",
+        "webhookId": "504fedd4-adb5-48d4-af3d-40b091d8a33f"
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "d3f01b83-1768-4e27-a847-91a75a1f66eb",
+                "name": "timestamp",
+                "value": "={{ $json.body.timestamp }}",
+                "type": "string"
+              },
+              {
+                "id": "981a8635-d686-41ae-8f5b-35690cbac7a1",
+                "name": "cpu",
+                "value": "={{ $json.body.cpu }}",
+                "type": "number"
+              },
+              {
+                "id": "9e479e60-d696-43e7-b68c-7af15eb9092f",
+                "name": "ram",
+                "value": "={{ $json.body.ram }}",
+                "type": "number"
+              },
+              {
+                "id": "c05067d1-0ed7-4eb1-9703-5a71bb341498",
+                "name": "disk",
+                "value": "={{ $json.body.disk }}",
+                "type": "object"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          -180,
+          -20
+        ],
+        "id": "c74d934b-87f8-450e-a584-628f6eebda67",
+        "name": "Edit Fields"
+      },
+      {
+        "parameters": {
+          "jsCode": "const disk = $input.first().json[\"disk\"];\nconst diskAlert = Object.values(disk).some(value => value > 90);\n\nreturn [\n  {\n    json: {\n      alert:  $input.first().json.cpu > 90 ||  $input.first().json.ram > 85 || diskAlert,\n      cpu:  $input.first().json.cpu,\n      ram:  $input.first().json.ram,\n      timestamp : $input.first().json.timestamp,\n      disk\n    }\n  }\n];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          20,
+          -20
+        ],
+        "id": "ec58ac45-ffdf-42e7-bc22-8f1936fbe3f9",
+        "name": "Code"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "eb966365-798d-4f54-b6a3-1d64c0a53ce5",
+                "leftValue": "={{ $json.alert }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "boolean",
+                  "operation": "true",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          240,
+          -20
+        ],
+        "id": "5a4c1546-f03b-45de-9575-4fdb1c5268f5",
+        "name": "If"
+      },
+      {
+        "parameters": {
+          "resource": "message",
+          "guildId": {
+            "__rl": true,
+            "value": "YOUR SERVER ID",
+            "mode": "id"
+          },
+          "sendTo": "user",
+          "userId": {
+            "__rl": true,
+            "value": "YOUR ID DISCORD",
+            "mode": "id"
+          },
+          "content": "=🚨 Anomaly Detected!\n\n🕒 {{$json[\"timestamp\"]}}\n🧠 CPU: {{$json[\"cpu\"]}}%\n🧵 RAM: {{$json[\"ram\"]}}%\n\n📀 Top Disk Usage:\n{{ $json.disk.toJsonString() }} }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.discord",
+        "typeVersion": 2,
+        "position": [
+          440,
+          -160
+        ],
+        "id": "6a833fa0-cf82-4d72-9348-bf82ae599435",
+        "name": "Discord",
+        "webhookId": "3da317d1-58c7-4cf7-a2cc-f27da7936822",
+        "credentials": {
+          "discordBotApi": {
+            "id": "Your id of your credentials discord dev",
+            "name": "Discord Bot account"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Edit Fields",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Edit Fields": {
+        "main": [
+          [
+            {
+              "node": "Code",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code": {
+        "main": [
+          [
+            {
+              "node": "If",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "If": {
+        "main": [
+          [
+            {
+              "node": "Discord",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "pinData": {},
+    "meta": {
+      "instanceId": "ef8231c16f0ef84d56b9b4054ed685ffe859d26a32135f3d7732a873053c77bd"
+    }
+  }
