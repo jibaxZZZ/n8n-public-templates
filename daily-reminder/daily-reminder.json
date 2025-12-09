@@ -1,0 +1,70 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "name": "Daily Cron",
+      "id": "16d8f493-0a76-4dcc-83fe-db137591d9e3"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "message",
+              "value": "Time to review priority tasks today!",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "reminderAt",
+              "value": "={{ new Date().toISOString() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        0
+      ],
+      "name": "Daily Reminder",
+      "id": "fcbab5b5-dd10-4533-adae-4ae69eeb6a35"
+    }
+  ],
+  "connections": {
+    "Daily Cron": {
+      "main": [
+        [
+          {
+            "node": "Daily Reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "4e9078df-7eb3-4ca5-ac01-9bfed9ef57d6"
+  }
+}
